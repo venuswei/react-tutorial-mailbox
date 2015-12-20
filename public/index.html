@@ -2,21 +2,233 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>React Tutorial</title>
+    <title>React Mailbox Editor</title>
     <!-- Not present in the tutorial. Just for basic styling. -->
-    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/trumbowyg.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+    <link rel="stylesheet" href="css/base.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react/0.14.0/react-dom.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.6.15/browser.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
+    <script src="js/trumbowyg.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+    
   </head>
   <body>
-    <div id="content"></div>
-    <script type="text/babel" src="scripts/example.js"></script>
-    <script type="text/babel">
-      // To get started with this tutorial running your own code, simply remove
-      // the script tag loading scripts/example.js and start writing code here.
-    </script>
+  
+    <div id="container"></div>
+
   </body>
+  <script type="text/babel">
+      // https://www.codementor.io/reactjs/tutorial/building-a-mailbox-editor-using-reactjs-and-bootstrap
+
+      
+      var Modal = React.createClass({
+        render:function(){
+          return (
+            <div className="modal fade" tabIndex="-1" role="dialog">
+              <div className="modal-dialog">
+                <div className="modal-content">
+                  <div className="modal-header">
+                    <button type="button" className="close" data-dismiss="modal" ><span>&times;</span></button>
+                    <h4 className="modal-title">{this.props.title}</h4>
+                  </div>
+                  <div className="modal-body">
+                    {this.props.body}
+                  </div>
+                  <div className="modal-footer">
+                    <div className="btn-toolbar pull-right" role="toolbar">
+                      <div className="btn-group" role="group">
+                        <button type="button" className="btn btn-danger outline" data-dismiss="modal">Close</button>
+                      </div>
+                    </div>
+                    <div className="clearfix" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          );  
+        }
+      });
+
+      var Editor = React.createClass({
+        getDefaultProps:function(){
+          return {
+            placeholder:'Enter your message here...',
+            body:''
+          };
+        },
+        componentDidMount:function(){
+          var that = this;
+          $('#editor').trumbowyg({
+            fullscreenable:false
+          })
+          .on('tbwchange',function(){
+            that.props.onChange($('#editor').trumbowyg('html'));
+          });
+          $('#editor').trumbowyg('html',this.props.body);
+        },
+        //Need to familiarise with lifecycle hooks: http://stackoverflow.com/questions/29873730/react-lifecycle-methods-understanding
+        componentWillReceiveProps:function(nextProps){
+          if (nextProps.body===""){
+            $('#editor').trumbowyg('empty');
+          }
+        },
+        render:function(){
+          return (
+            <div id='editor' placeholder={this.props.placeholder}>
+            </div>
+          );
+        }
+      });
+      
+      var Mailbox = React.createClass({
+        getInitialState:function(){
+          return {
+            "emailTo":"",
+            "emailCC":"",
+            "emailBCC":"",
+            "emailSubject":"",
+            "emailBody":""
+          };
+        },
+        handleEditorChange:function(emailBody){
+          this.setState({"emailBody":emailBody});
+        },
+        handleEmailToChange:function(e){
+          this.setState({"emailTo":e.target.value});
+        },  
+        handleEmailCCChange:function(e){
+          this.setState({"emailCC":e.target.value});
+        },
+        handleEmailBCCChange:function(e){
+          this.setState({"emailBCC":e.target.value});
+        },
+        handleEmailSubjectChange:function(e){
+          this.setState({"emailSubject":e.target.value});
+        },
+        handleCancelClick:function(){
+          this.setState({
+            "emailTo":"",
+            "emailCC":"",
+            "emailBCC":"",
+            "emailSubject":"",
+            "emailBody":""
+          });
+        },
+        handleSaveClick:function(){
+          $(ReactDOM.findDOMNode(this.refs.modalSave)).modal();
+        },
+        handleSendClick:function(){
+          $(ReactDOM.findDOMNode(this.refs.modalSend)).modal();
+        },
+        render:function(){
+          return (
+            <div className="panel panel-default">
+              <div className="panel-heading">
+                <div className="row">
+                  <div className="col-xs-8 center">
+                    <div className="inbox-title">
+                      <span className="glyphicon glyphicon-envelope center"></span>
+                      <h2 className="center">{this.props.title}</h2>
+                    </div>
+                  </div>
+                  <div className="col-xs-4 center">
+                    <div className="inbox-avatar text-right">
+                      <img className="avatarimg" src={this.props.urlImage} />
+                      <div className="inbox-avatar-name"><a href={this.props.link}>{this.props.username}</a></div>
+                    </div>
+                  </div>
+                </div>
+                <hr />
+                <div className="row">
+                  <div className="col-xs-12">
+                    <form className="form-horizontal">
+                      <div className="form-group">
+                        <label htmlFor="email-to" className="col-sm-1 control-label">To</label>
+                        <div className="col-sm-11">
+                          <input type="email"
+                                  className="form-control"
+                                  id="email-to"
+                                  value={this.state.emailTo}
+                                  placeholder="Ex: hello@example.com"
+                                  onChange={this.handleEmailToChange}/>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="email-cc" className="col-sm-1 control-label">CC</label>
+                        <div className="col-sm-11">
+                          <input type="email"
+                                className="form-control"
+                                id="email-cc"
+                                value={this.state.emailCC}
+                                onChange={this.handleEmailCCChange}/>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="email-bcc" className="col-sm-1 control-label">BCC</label>
+                        <div className="col-sm-11">
+                          <input type="email"
+                                 className="form-control"
+                                 id="email-bcc"
+                                 value={this.state.emailBCC}
+                                 onChange={this.handleEmailBCCChange}/>
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="email-subject" className="col-sm-1 control-label">Subject</label>
+                        <div className="col-sm-11">
+                          <input type="email"
+                                 className="form-control"
+                                 id="email-subject"
+                                 value={this.state.emailSubject}
+                                 onChange={this.handleEmailSubjectChange}/>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+              <div className="panel-body">
+                <Editor onChange={this.handleEditorChange} body={this.state.emailBody} />
+              </div>
+              <div className="panel-footer">
+                  
+                  <div className="btn-toolbar pull-right" role="toolbar">
+                      <div className="btn-group" role="group">
+                        <button type="button" onClick={this.handleCancelClick} className="btn btn-danger">CANCEL</button>
+                        <button type="button" onClick={this.handleSaveClick} className="btn btn-success">SAVE</button>
+                      </div>
+                      <div className="btn-group" role="group">
+                        <button type="button" onClick={this.handleSendClick} className="btn btn-primary outline">SEND</button>
+                      </div>
+                      
+                      <Modal ref="modalSend" title="Email sent!" body="Your email has been successfully sent!" />
+                      <Modal ref="modalSave" title="Email saved!" body="Your email has been successfully saved!" />
+                  </div>
+                  <div className="clearfix">
+                  </div>
+
+              </div>
+            </div>
+
+          );
+        }
+      }); 
+
+      var options = {
+        username: "Grégory D'Angelo",
+        link: "https://gdangelo.fr",
+        urlImage: "https://gdangelo.fr/images/avatar.jpg",
+        title: "React Mailbox Editor"
+      };
+
+      var element = React.createElement(Mailbox,options);
+      ReactDOM.render(element,document.getElementById('container'));
+
+  </script>
 </html>
